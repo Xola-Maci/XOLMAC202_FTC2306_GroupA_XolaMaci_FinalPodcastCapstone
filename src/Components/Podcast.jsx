@@ -1,71 +1,94 @@
-import React from "react";
-import { Link, Route, BrowserRouter as Router, useParams } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
-export default function Podcast() {
-  const [allpods, setAllpods] = React.useState([]);
-  const [loading, setLoading] = React.useState(true); // Loading state
+const formatDate = (dateString) => {
+  const date = { day: 'numeric', month: 'long', year: 'numeric' };
+  return new Date(dateString).toLocaleDateString(undefined, date);
+};
 
-  React.useEffect(() => {
-    async function getShowsPreview() {
+const ShowList = ({ shows, onShowClick }) => (
+  <div>
+    <ul className="list--details">
+      {shows.map(show => (
+        <div className="podcast--info" key={show.id} onClick={() => onShowClick(show.id)}>
+          <img src={show.image} alt={show.title} className="podcast--main--image" />
+          <h3 className="podcast--title">{show.title}</h3>
+          <h3>{`Seasons: ${show.seasons}`}</h3>
+          <h4 className="date--updated">{`Last updated: ${formatDate(show.updated)}`}</h4>
+        </div>
+      ))}
+    </ul>
+  </div>
+);
+
+const ShowDetails = ({ details, onClose }) => (
+  <div className="modal">
+    <div className="modal-content">
+      <span className="close" onClick={onClose}>&times;</span>
+      <h2>{details.title}</h2>
+      <p>{details.description}</p>
+    </div>
+  </div>
+);
+
+const Podcast = () => {
+  const [shows, setShows] = useState([]);
+  const [selectedShowId, setSelectedShowId] = useState(null);
+  const [showDetails, setShowDetails] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true); // Add loading state
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const podResults = await fetch("https://podcast-api.netlify.app/shows");
-        const showData = await podResults.json();
-        setAllpods(showData);
+        const response = await fetch('https://podcast-api.netlify.app/shows');
+        const data = await response.json();
+
+        // Use the provided code to enhance the podcasts with genres
+        const enhancedPodcasts = data.map(async (podcast) => {
+          const showDetailsResponse = await fetch(`https://podcast-api.netlify.app/id/${podcast.id}`);
+          if (showDetailsResponse.ok) {
+            const showDetailsData = await showDetailsResponse.json();
+            return {
+              ...podcast,
+              genre: showDetailsData.genres && showDetailsData.genres.map((genre) => genre.name).join(', '),
+            };
+          }
+          return podcast;
+        });
+
+        // Wait for all enhanced podcasts to be resolved
+        const podcastsWithGenres = await Promise.all(enhancedPodcasts);
+
+        setShows(podcastsWithGenres);
       } catch (error) {
-        console.error("Error fetching podcast data:", error);
+        console.error('Error fetching show list:', error);
       } finally {
-        setLoading(false); // Set loading to false when done, whether successful or not
+        setLoading(false);
       }
-    }
-    getShowsPreview();
+    };
+
+    fetchData();
   }, []);
 
-  // Handling the podcast Details
-  const PodcastDetails = () => {
-    const { id } = useParams(); // Extract podcast ID from URL parameters
-    const [podDetails, setPodDetails] = React.useState({});
+  const handleShowClick = (id) => {
+    setSelectedShowId(id);
+  };
 
-    React.useEffect(() => {
-      async function getPodcastDetails() {
-        try {
-          const podResults = await fetch(`https://podcast-api.netlify.app/id/${id}`);
-          const podcastData = await podResults.json();
-          setPodDetails(podcastData);
-        } catch (error) {
-          console.error("Error fetching podcast details:", error);
-        }
-      }
-
-      getPodcastDetails();
-    }, [id]);
-
-    return (
-      <div>
-        <h2>{podDetails.title}</h2>
-        <p>{podDetails.description}</p>
-        {/* Add more details as needed */}
-      </div>
-    );
+  const handleCloseModal = () => {
+    setShowModal(false);
   };
 
   return (
-    <main>
-      <div className="preview">
-        <h1>Podcasts</h1>
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <ul className="list--details" onClick={PodcastDetails}>
-            {allpods.map((podcast) => (
-              <ul key={podcast.id} className="podcast--info">
-                <img src={podcast.image} className="podcast--main--image" alt={podcast.title}></img>
-                <h3 className="podcast--title">{podcast.title}</h3>
-                <h3>{`Seasons: ${podcast.seasons}`}</h3>
-              </ul>
-            ))}
-          </ul>
-        )}
-      </div>
-    </main>
+    <div>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <ShowList shows={shows} onShowClick={handleShowClick} />
+      )}
+      {showModal && <ShowDetails details={showDetails} onClose={handleCloseModal} />}
+    </div>
   );
-}
+};
+
+export default Podcast;

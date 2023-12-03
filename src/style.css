@@ -22,6 +22,10 @@ main {
   align-items: center;
 }
 
+.date--updated{
+  font-size: small;
+  font-style: italic;
+}
 
 .button-search-podcast{
   padding: 10px 20px;
@@ -68,7 +72,7 @@ main {
 .podcast--info{
   width: calc(25% - 40px); /* Adjust the maximum width of container */
   box-sizing: border-box;
-  max-height: 350px;
+  max-height: 370px;
   margin: 50px auto; /* Center the container on the page */
   padding: 20px;
   background-color: #FFA5AB; /* Container background color */
