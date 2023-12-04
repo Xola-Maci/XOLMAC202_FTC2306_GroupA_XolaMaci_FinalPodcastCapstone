@@ -10,8 +10,9 @@ const ShowList = ({ shows, onShowClick }) => (
   <div>
     <ul className="list--details">
       {shows.map(show => (
-        <div className="podcast--info" key={show.id} onClick={() => onShowClick(show.id)}>
-          <img src={show.image} alt={show.title} className="podcast--main--image" />
+        <div className="podcast--info" key={show.id} >
+          <img src={show.image} alt={show.title} className="podcast--main--image" 
+          onClick={() => onShowClick(show.id)}/>
           <h3 className="podcast--title">{show.title}</h3>
           <h3>{`Seasons: ${show.seasons}`}</h3>
           <h4 className="date--updated">{`Last updated: ${formatDate(show.updated)}`}</h4>
